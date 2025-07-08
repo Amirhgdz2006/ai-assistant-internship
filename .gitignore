@@ -1,0 +1,10 @@
+# .gitignore
+
+# Virtual Environment
+venv/
+__pycache__/
+*.pyc
+
+# IDE specific files
+.idea/
+.vscode/
