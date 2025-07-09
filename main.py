@@ -1,6 +1,5 @@
-student_name = "Amirhossein"
+from core.chatbot_cli import run_chatbot
 
-print('\n')
-print(f"welcome, {student_name}!")
-
+if __name__ == "__main__":
+    run_chatbot()
 
