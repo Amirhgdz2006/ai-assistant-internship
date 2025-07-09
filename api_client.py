@@ -5,7 +5,7 @@ option = input("which one you want to choose? GET OR POST :\nYou: ").lower()
 
 if option == 'get' :
 
-    url = "https://jsonplaceholder.typicode.com/posts/2"
+    url = "https://jsonplaceholder.typicode.com/posts/1"
 
     data = requests.get(url)
 
