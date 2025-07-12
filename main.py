@@ -1,5 +1,14 @@
-from core.chatbot_cli import run_chatbot
+from fastapi import FastAPI
 
-if __name__ == "__main__":
-    run_chatbot()
+app = FastAPI()
 
+@app.get('/')
+def message():
+    
+    return {"message": "Hello, AI Assistant Developer!"}
+
+
+@app.get('/items/{item_id}')
+def read_item(item_id: int, query:str = None):
+    
+    return {"item_id":item_id, "query": query}
