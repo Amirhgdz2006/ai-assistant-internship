@@ -5,11 +5,7 @@ def run_chatbot():
     try:
         process = True
 
-        user_name = input("Bot: Hi, I am a simple chatbot that answers a few basic questions.\nBot: What is your name?\nYou: ").lower()
-        print(f'Bot: Hi {user_name} How can I help you today?')
-
-
-        responses = get_responses(user_name)
+        responses = get_responses()
 
         while process:
             entry = input('You: ').lower()
@@ -31,5 +27,3 @@ def run_chatbot():
                     print("Bot: Sorry, I didn't understand what you said. Can you rephrase it?")
     except KeyboardInterrupt:
         print('The program ended.')
-
-
