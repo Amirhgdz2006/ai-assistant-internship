@@ -2,7 +2,7 @@ from fastapi import FastAPI , APIRouter , HTTPException
 from core.responses import get_responses
 from core.schemas import ChatMessageRequest , ChatMessageResponse
 
-router = APIRouter()
+router = APIRouter(tags=['Chat'])
 
 @router.post('/chat' , response_model=ChatMessageResponse)
 def chat_message(request:ChatMessageRequest):

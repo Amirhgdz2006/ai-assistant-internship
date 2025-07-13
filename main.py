@@ -3,7 +3,7 @@ from core.api.endpoints import router
 
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI()
+app = FastAPI(title='AI Assistant API')
 
 origins = ["http://localhost:8000","http://localhost:3000","http://localhost:5173"]
 
