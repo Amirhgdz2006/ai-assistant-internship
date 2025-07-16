@@ -1,9 +1,10 @@
 from fastapi import FastAPI , Request
 from core.api.endpoints import router
-
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(title='AI Assistant API')
+from routers import users
+
+app = FastAPI(title="AI Assistant API",description="API for an AI-powered chat assistant that manages your calendar.",version="0.1.0")
 
 origins = ["http://localhost:8000","http://localhost:3000","http://localhost:5173"]
 
@@ -17,15 +18,15 @@ app.add_middleware(
 
 @app.middleware('http')
 async def process_time(request:Request , call_next):
-    
     response = await call_next(request)
-    return response 
+    return response
 
-@app.get('/')
-def message():
-
-    return {"message": "Hello, AI Assistant Developer!"}
 
 app.include_router(router,prefix='/api/v1')
 
+# app.include_router(chat.router)
+app.include_router(users.router)
 
+@app.get("/", tags=["Root"])
+def read_root():
+    return {"message": "Welcome to the AI Assistant API!"}

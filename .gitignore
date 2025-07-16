@@ -8,3 +8,6 @@ __pycache__/
 # IDE specific files
 .idea/
 .vscode/
+
+.env
+alembic.ini
