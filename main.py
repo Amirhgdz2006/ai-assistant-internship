@@ -1,8 +1,7 @@
 from fastapi import FastAPI , Request
-from core.api.endpoints import router
 from fastapi.middleware.cors import CORSMiddleware
-
 from routers import users
+from routers import ai
 
 app = FastAPI(title="AI Assistant API",description="API for an AI-powered chat assistant that manages your calendar.",version="0.1.0")
 
@@ -22,10 +21,11 @@ async def process_time(request:Request , call_next):
     return response
 
 
-app.include_router(router,prefix='/api/v1')
 
 # app.include_router(chat.router)
 app.include_router(users.router)
+
+app.include_router(ai.router)
 
 @app.get("/", tags=["Root"])
 def read_root():

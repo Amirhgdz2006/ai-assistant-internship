@@ -20,17 +20,29 @@ def create_user(db:Session , user:UserCreate):
     db.refresh(db_user)
     return db_user
 #-------------------------------- read 
+def get_users(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(User).offset(skip).limit(limit).all()
+
 def get_user(db: Session, user_id: int):
     return db.query(User).filter(User.id == user_id).first()
 #-------------------------------- update
 def update_user(db:Session , user_id:int , user_in:UserUpdate):
     db_user = db.query(User).filter(User.id == user_id).first()
-    if not db_user:
+    if db_user == None:
         return None
     
-    update_data = user_in.dict(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(db_user, key, value)
+    # update_data = user_in.dict(exclude_unset=True)
+    # for key, value in update_data.items():
+    #     setattr(db_user, key, value)
+
+    if user_in.email is not None:
+        db_user.email = user_in.email
+
+    if user_in.password is not None:
+        db_user.hash_password = get_hash_password(user_in.password)
+
+    if user_in.is_active is not None:
+        db_user.is_active = user_in.is_active
 
     db.add(db_user)
     db.commit()
@@ -39,7 +51,7 @@ def update_user(db:Session , user_id:int , user_in:UserUpdate):
 #-------------------------------- delete
 def delete_user(db:Session , user_id:int):
     db_user = db.query(User).filter(User.id == user_id).first()
-    if not db_user:
+    if db_user == None:
         return None
 
     db.delete(db_user)
