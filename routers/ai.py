@@ -2,7 +2,7 @@ from fastapi import APIRouter , HTTPException
 import openai
 from pydantic import BaseModel
 from core.config import OPENAI_API_KEY, OPENAI_BASE_URL
-from tools import weather
+from tools import weather , calendar
 import json
 
 router = APIRouter(tags=['AI'])
@@ -39,6 +39,56 @@ async def run_agent(request: PromptRequest):
                     "required": ["location"],
                 },
             },
+        },
+
+        {
+            "type": "function",
+            "function": {
+                "name": "list_calendar_events",
+                "description": "Lists events on the user's calendar for a given time range.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "start_time": {
+                            "type": "string",
+                            "description": "The start of the time range in ISO 8601 format, e.g., 2023-10-27T00:00:00",
+                        },
+                        "end_time": {
+                            "type": "string",
+                            "description": "The end of the time range in ISO 8601 format, e.g., 2023-10-27T23:59:59",
+                        },
+                    },
+                    "required": ["start_time", "end_time"],
+                },
+            },
+        },
+        
+        {
+            "type": "function",
+            "function": {
+                "name": "create_calendar_event",
+                "description": "Creates a new event on the user's calendar.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "title": {"type": "string", "description": "The title of the event."},
+                        "start_time": {
+                            "type": "string",
+                            "description": "The start time in ISO 8601 format.",
+                        },
+                        "end_time": {
+                            "type": "string",
+                            "description": "The end time in ISO 8601 format.",
+                        },
+                        "participants": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "A list of email addresses of the participants.",
+                        },
+                    },
+                    "required": ["title", "start_time", "end_time", "participants"],
+                },
+            },
         }
     ]
 
@@ -61,6 +111,8 @@ async def run_agent(request: PromptRequest):
   
             available_functions = {
                 "get_current_weather": weather.get_current_weather,
+                "list_calendar_events": calendar.list_calendar_events,
+                "create_calendar_event": calendar.create_calendar_event,
             }
 
 
