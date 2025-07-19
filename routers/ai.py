@@ -96,39 +96,53 @@ async def run_agent(request: PromptRequest):
 
     try:
 
-        response = client.chat.completions.create(
+        first_response = openai.chat.completions.create(
             model="gpt-4.1-mini",
             messages=messages,
             tools=tools,
             tool_choice="auto",  
         )
 
-        response_message = response.choices[0].message
+        response_message = first_response.choices[0].message
         tool_calls = response_message.tool_calls
 
+        if not tool_calls:
+            return {"response": response_message.content}
 
-        if tool_calls:
+
   
-            available_functions = {
-                "get_current_weather": weather.get_current_weather,
-                "list_calendar_events": calendar.list_calendar_events,
-                "create_calendar_event": calendar.create_calendar_event,
-            }
+        messages.append(response_message)
+        
+        available_functions = {
+            "get_current_weather": weather.get_current_weather,
+            "list_calendar_events": calendar.list_calendar_events,
+            "create_calendar_event": calendar.create_calendar_event,
+        }
 
 
-            tool_call = tool_calls[0]
+        for tool_call in tool_calls:
             function_name = tool_call.function.name
             function_to_call = available_functions[function_name]
             function_args = json.loads(tool_call.function.arguments)
-
             function_response = function_to_call(**function_args)
 
-            return {
-                "model_decision": f"Calling function: {function_name} with args: {function_args}",
-                "function_result": json.loads(function_response)
+            messages.append(
+            {
+                "tool_call_id": tool_call.id,
+                "role": "tool",
+                "name": function_name,
+                "content": function_response,
             }
-        else:
-            return {"response": response_message.content}
+        )
 
+        
+        second_response = openai.chat.completions.create(
+            model="gpt-4.1-mini",
+            messages=messages,
+        )
+
+        return {"response": second_response.choices[0].message.content}
+
+            
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
