@@ -1,0 +1,10 @@
+# Database Configuration
+DB_USER=your_db_username
+DB_PASSWORD=your_db_password
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=your_db_name
+
+# OpenAI API Configuration
+OPENAI_API_KEY=your_openai_api_key
+OPENAI_BASE_URL=https://api.avalai.ir/v1
