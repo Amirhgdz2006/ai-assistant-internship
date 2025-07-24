@@ -1,9 +1,11 @@
-from fastapi import APIRouter , HTTPException
+from fastapi import APIRouter , HTTPException , Request
 import openai
 from pydantic import BaseModel
 from core.config import OPENAI_API_KEY, OPENAI_BASE_URL
 from tools import weather , calendar
 import json
+from routers.auth import get_token_for_user
+from datetime import datetime
 
 router = APIRouter(tags=['AI'])
 
@@ -16,10 +18,11 @@ client = openai.OpenAI(
 )
 
 @router.post('/prompt')
-async def run_agent(request: PromptRequest):
+async def run_agent(request:Request , body: PromptRequest):
     if not client.api_key:
         raise HTTPException(status_code=500, detail="API key is not configured.")
 
+    credentials = await get_token_for_user(request)
 
     tools = [
         {
@@ -45,29 +48,25 @@ async def run_agent(request: PromptRequest):
             "type": "function",
             "function": {
                 "name": "list_calendar_events",
-                "description": "Lists events on the user's calendar for a given time range.",
+                "description": "Lists a specific number of upcoming events from the user's primary Google Calendar.",
                 "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "start_time": {
-                            "type": "string",
-                            "description": "The start of the time range in ISO 8601 format, e.g., 2023-10-27T00:00:00",
-                        },
-                        "end_time": {
-                            "type": "string",
-                            "description": "The end of the time range in ISO 8601 format, e.g., 2023-10-27T23:59:59",
-                        },
-                    },
-                    "required": ["start_time", "end_time"],
+                "type": "object",
+                "properties": {
+                    "quantity": {
+                    "type": "string",
+                    "description": "The number of upcoming calendar events to retrieve. Must be a positive integer as string."
+                    }
                 },
+                "required": ["quantity"]
+                }
+            }
             },
-        },
         
         {
             "type": "function",
             "function": {
                 "name": "create_calendar_event",
-                "description": "Creates a new event on the user's calendar.",
+                "description": "Creates a new event on the user's google calendar.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -92,7 +91,7 @@ async def run_agent(request: PromptRequest):
         }
     ]
 
-    messages = [{"role": "user", "content": request.prompt}]
+    messages = [{"role": "user", "content": f"today date:{datetime.today().strftime("%Y-%m-%d")}"},{"role": "user", "content": body.prompt}]
 
     try:
 
@@ -124,6 +123,8 @@ async def run_agent(request: PromptRequest):
             function_name = tool_call.function.name
             function_to_call = available_functions[function_name]
             function_args = json.loads(tool_call.function.arguments)
+            if function_name in ["list_calendar_events" , "create_calendar_event"]:
+                function_args["credentials"] = credentials
             function_response = function_to_call(**function_args)
 
             messages.append(
