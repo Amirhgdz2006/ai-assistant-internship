@@ -138,3 +138,18 @@ uvicorn main:app --reload
 
 
 -----
+
+
+# Weekly Report - Week 5
+
+## خلاصه
+
+- راه‌اندازی پروژه جدید در Google Cloud Console و فعال‌سازی Google Calendar API 
+- دریافت فایل `client_secret.json` و شناسه پروژه (PROJECT ID) , (CLIENT SECRET) , (CLIENT ID)
+- ساخت فایل `auth.py` جهت مدیریت کامل احراز هویت با OAuth2:
+  - ایجاد لینک ورود گوگل
+  - گرفتن کد دسترسی (Authorization Code) = credentials
+- توسه بخش `ai.py`
+- توسعه بخش `calendar.py` شامل: 
+  - توابع خواندن رویدادهای تقویم کاربر (`list_calendar_events`)
+  - توابع ایجاد رویداد جدید در تقویم کاربر (`create_calendar_event`)

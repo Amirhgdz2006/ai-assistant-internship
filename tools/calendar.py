@@ -37,7 +37,7 @@ def list_calendar_events(quantity:str, credentials):
         return json.dumps({"error": "Failed to fetch calendar events.", "details": str(e)})
 
 
-def create_calendar_event(title:str , start_time:str , end_time:str , participants:list[str] , credentials):
+def create_calendar_event(title:str , start_time:str , end_time:str , participants:list[str] , credentials, location:str = None ):
 
     if not credentials:
         return json.dumps({"error": "User not authenticated. Please login first."})
@@ -55,10 +55,10 @@ def create_calendar_event(title:str , start_time:str , end_time:str , participan
             "dateTime": end_time,
             "timeZone": "Asia/Tehran"
         },
-        "attendees": participants
-                }
+        "attendees": participants,
+        "location" : location
+}
         service.events().insert(calendarId='primary', body=event).execute()
-
         return json.dumps(event)
 
     except Exception as e:

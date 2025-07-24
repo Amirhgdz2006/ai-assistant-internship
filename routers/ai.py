@@ -2,7 +2,7 @@ from fastapi import APIRouter , HTTPException , Request
 import openai
 from pydantic import BaseModel
 from core.config import OPENAI_API_KEY, OPENAI_BASE_URL
-from tools import weather , calendar
+from tools import calendar
 import json
 from routers.auth import get_token_for_user
 from datetime import datetime
@@ -25,25 +25,6 @@ async def run_agent(request:Request , body: PromptRequest):
     credentials = await get_token_for_user(request)
 
     tools = [
-        {
-            "type": "function",
-            "function": {
-                "name": "get_current_weather",
-                "description": "Get the current weather in a given location",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "location": {
-                            "type": "string",
-                            "description": "The city and state, e.g. San Francisco, CA",
-                        },
-                        "unit": {"type": "string", "enum": ["celsius", "fahrenheit"]},
-                    },
-                    "required": ["location"],
-                },
-            },
-        },
-
         {
             "type": "function",
             "function": {
@@ -84,6 +65,10 @@ async def run_agent(request:Request , body: PromptRequest):
                             "items": {"type": "string"},
                             "description": "A list of email addresses of the participants.",
                         },
+                        "location": {
+                        "type": "string",
+                        "description": "The physical or virtual location where the event will take place. This can be a meeting room, or a video call format"
+                        }
                     },
                     "required": ["title", "start_time", "end_time", "participants"],
                 },
@@ -113,7 +98,6 @@ async def run_agent(request:Request , body: PromptRequest):
         messages.append(response_message)
         
         available_functions = {
-            "get_current_weather": weather.get_current_weather,
             "list_calendar_events": calendar.list_calendar_events,
             "create_calendar_event": calendar.create_calendar_event,
         }
