@@ -124,6 +124,7 @@ async def run_agent(request:Request , body: PromptRequest):
         second_response = openai.chat.completions.create(
             model="gpt-4.1-mini",
             messages=messages,
+            stream=True
         )
 
         return {"response": second_response.choices[0].message.content}

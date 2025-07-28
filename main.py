@@ -6,13 +6,27 @@ from routers import auth
 from starlette.middleware.sessions import SessionMiddleware
 import os
 
+# ------------------------------
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+# ------------------------------
 
-app = FastAPI(title="AI Assistant API",description="API for an AI-powered chat assistant that manages your calendar.",version="0.1.0")
+app = FastAPI(title="AI Assistant API", description="API for an AI-powered chat assistant that manages your calendar.", version="0.1.0")
 
-origins = ["http://localhost:8000","http://localhost:3000","http://localhost:5173"]
+# ------------------------------
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+# ------------------------------
+
+from core.limiter import limiter
+# ------------------------------
+
+origins = ["http://localhost:8000", "http://localhost:3000", "http://localhost:5173"]
 
 app.add_middleware(
-        CORSMiddleware,
+    CORSMiddleware,
     allow_origins=origins,  
     allow_credentials=True, 
     allow_methods=["*"],    
@@ -20,18 +34,15 @@ app.add_middleware(
 )
 
 @app.middleware('http')
-async def process_time(request:Request , call_next):
+async def process_time(request: Request, call_next):
     response = await call_next(request)
     return response
 
 app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET_KEY", "your-super-secret-key"))
 
-# app.include_router(chat.router)
 app.include_router(users.router)
-
 app.include_router(ai.router)
-
-app.include_router(auth.router , prefix="/auth")
+app.include_router(auth.router, prefix="/auth")
 
 @app.get("/", tags=["Root"])
 def read_root():

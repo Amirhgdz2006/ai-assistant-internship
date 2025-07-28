@@ -4,12 +4,17 @@ from typing import Optional
 class UserCreate(BaseModel):
     email : EmailStr
     password : str
-
+    # ------------------------------
+    role : Optional[str] = "user"
+    # ------------------------------
 
 class UserOut(BaseModel):
     id : int
     email : EmailStr
     is_active : bool
+    # ------------------------------
+    role : str
+    # ------------------------------
 
     class Config():
         orm_mode = True
