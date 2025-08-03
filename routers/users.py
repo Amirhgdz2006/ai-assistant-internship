@@ -4,19 +4,16 @@ from core.database import get_db
 from typing import Optional , List
 import crud.user
 
-from schemas.user import UserCreate , UserOut , UserUpdate
+from schemas.user import UserCreate , UserOut , UserUpdate , UserWithToken
 
-# ------------------------------
 from core.limiter import limiter  
-# ------------------------------
 from utils.dependencies import require_admin , require_self_or_admin
 from models.user import User
-# ------------------------------
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
-@router.post('/' , response_model=UserOut, status_code=status.HTTP_201_CREATED)
+@router.post('/' , response_model=UserWithToken, status_code=status.HTTP_201_CREATED)
 @limiter.limit("1/minute")
 def create_new_user(user: UserCreate, request: Request, db: Session = Depends(get_db)):
     db_user = crud.user.get_user_by_email(db , email=user.email)

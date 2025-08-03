@@ -4,6 +4,7 @@ from models.user import User
 from schemas.user import UserCreate , UserUpdate
 
 password_context = CryptContext(schemes=['bcrypt'] , deprecated='auto')
+from utils.jwt_handler import create_access_token
 
 #-------------------------------- create 
 def get_hash_password(password):
@@ -14,13 +15,19 @@ def get_user_by_email(db:Session , email):
 
 def create_user(db:Session , user:UserCreate):
     hashed_password = get_hash_password(user.password)
-    # ------------------------------
     db_user = User(email = user.email , hash_password = hashed_password , role = user.role or "user")
-    # ------------------------------
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
-    return db_user
+    token = create_access_token({"sub": db_user.email, "user_id": db_user.id})
+    return {
+        "id": db_user.id,
+        "email": db_user.email,
+        "is_active": db_user.is_active,
+        "role": db_user.role,
+        "access_token": token
+    }
+
 #-------------------------------- read 
 def get_users(db: Session, skip: int = 0, limit: int = 100):
     return db.query(User).offset(skip).limit(limit).all()
@@ -32,10 +39,6 @@ def update_user(db:Session , user_id:int , user_in:UserUpdate):
     db_user = db.query(User).filter(User.id == user_id).first()
     if db_user == None:
         return None
-    
-    # update_data = user_in.dict(exclude_unset=True)
-    # for key, value in update_data.items():
-    #     setattr(db_user, key, value)
 
     if user_in.email is not None:
         db_user.email = user_in.email

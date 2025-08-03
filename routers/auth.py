@@ -7,16 +7,12 @@ from core.config import CLIENT_CONFIG
 
 from schemas.user import UserCreate
 
-# -----------------------------
-
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from core.database import get_db
 from crud.user import get_user_by_email , create_user
 from passlib.context import CryptContext
 from utils.jwt_handler import create_access_token
-
-# -----------------------------
 
 router = APIRouter(tags=["Auth"])
 
@@ -104,17 +100,3 @@ async def get_token_for_user(request: Request):
 
 # -----------------------------
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
-
-@router.post("/token")
-def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:Session = Depends(get_db)):
-    user = get_user_by_email(db, email=form_data.username)
-    if not user or not verify_password(form_data.password, user.hash_password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect email or password", headers={"WWW-Authenticate": "Bearer"})
-    access_token = create_access_token({"user_id": user.id})
-    return {"access_token": access_token, "token_type": "bearer"}
-
-# -----------------------------
