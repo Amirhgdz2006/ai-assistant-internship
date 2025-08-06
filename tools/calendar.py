@@ -2,6 +2,8 @@ import json
 from googleapiclient.discovery import build
 from datetime import datetime, timezone
 
+# ------------- list calendar events function -------------
+
 def list_calendar_events(quantity:str, credentials):
     if not credentials:
         return json.dumps({"error": "User not authenticated. Please login first."})
@@ -36,6 +38,8 @@ def list_calendar_events(quantity:str, credentials):
     except Exception as e:
         return json.dumps({"error": "Failed to fetch calendar events.", "details": str(e)})
 
+
+# ------------- create calendar events function -------------
 
 def create_calendar_event(title:str , start_time:str , end_time:str , participants:list[str] , credentials, location:str = None ):
 

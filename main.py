@@ -1,71 +1,38 @@
-from fastapi import FastAPI , Request
-from fastapi.middleware.cors import CORSMiddleware
-from routers import users
-from routers import ai
-from routers import auth
-from starlette.middleware.sessions import SessionMiddleware
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
-from fastapi.openapi.utils import get_openapi
+from slowapi.middleware import SlowAPIMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 
-app = FastAPI(title="AI Assistant API", description="API for an AI-powered chat assistant that manages your calendar.", version="0.1.0")
-
-limiter = Limiter(key_func=get_remote_address)
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+import routers.user
+import routers.ai
+import routers.google_auth
 
 from core.limiter import limiter
 
-origins = ["http://localhost:8000", "http://localhost:3000", "http://localhost:5173"]
+secret_key = os.getenv("SECRET_KEY")
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,  
-    allow_credentials=True, 
-    allow_methods=["*"],    
-    allow_headers=["*"]
-)
+app = FastAPI()
 
-@app.middleware('http')
-async def process_time(request: Request, call_next):
-    response = await call_next(request)
-    return response
+app.add_middleware(SessionMiddleware, secret_key=secret_key)
+app.state.limiter = limiter
+app.add_middleware(SlowAPIMiddleware)
 
-app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET_KEY", "your-super-secret-key"))
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(
+        status_code=429,
+        content={"message": "Too many requests. Please wait a few seconds and try again."}
+    )
 
-app.include_router(users.router)
-app.include_router(ai.router)
-app.include_router(auth.router, prefix="/auth")
+app.include_router(routers.user.router)
+app.include_router(routers.ai.router)
+app.include_router(routers.google_auth.router)
 
 @app.get("/", tags=["Root"])
-def read_root():
-    return {"message": "Welcome to the AI Assistant API!"}
-
-# ------------------------------ Swagger JWT Support ------------------------------
-
-def custom_openapi():
-    if app.openapi_schema:
-        return app.openapi_schema
-    openapi_schema = get_openapi(
-        title=app.title,
-        version=app.version,
-        description=app.description,
-        routes=app.routes,
-    )
-    openapi_schema["components"]["securitySchemes"] = {
-        "BearerAuth": {
-            "type": "http",
-            "scheme": "bearer",
-            "bearerFormat": "JWT",
-        }
-    }
-    for path in openapi_schema["paths"].values():
-        for method in path.values():
-            method["security"] = [{"BearerAuth": []}]
-    app.openapi_schema = openapi_schema
-    return app.openapi_schema
-
-app.openapi = custom_openapi
+def intro():
+    return {"message": "Welcome to the FastAPI application"}

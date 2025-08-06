@@ -1,12 +1,11 @@
-from sqlalchemy import  Column , String , Integer , VARCHAR , Boolean
 from core.database import Base
+from sqlalchemy import Column, Integer, String , Boolean
 
 class User(Base):
     __tablename__ = 'users'
-    id = Column(Integer , index=True , primary_key=True)
-    email = Column(String , unique=True , index=True , nullable=False)
-    hash_password = Column(String , nullable=False)
-    is_active = Column(Boolean , default=True)
-    # ------------------------------
-    role = Column(String, default="user")
-    # ------------------------------
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True ,nullable=False)
+    password = Column(String, nullable=True)
+    role = Column(String, default='user')
+    is_active = Column(Boolean, default=True)
+    auth_with_google = Column(Boolean , default=False)

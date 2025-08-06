@@ -1,11 +1,13 @@
-from fastapi import APIRouter , HTTPException , Request
+from fastapi import APIRouter , HTTPException , Request , Depends
 import openai
 from pydantic import BaseModel
 from core.config import OPENAI_API_KEY, OPENAI_BASE_URL
 from tools import calendar
 import json
-from routers.auth import get_token_for_user
+from routers.google_auth import get_token_for_user
 from datetime import datetime
+from models.user import User
+from security.dependencies import require_self_or_admin
 
 router = APIRouter(tags=['AI'])
 
@@ -18,7 +20,7 @@ client = openai.OpenAI(
 )
 
 @router.post('/prompt')
-async def run_agent(request:Request , body: PromptRequest):
+async def run_agent(request:Request , body: PromptRequest, _: User = Depends(require_self_or_admin)):
     if not client.api_key:
         raise HTTPException(status_code=500, detail="API key is not configured.")
 
@@ -124,7 +126,6 @@ async def run_agent(request:Request , body: PromptRequest):
         second_response = openai.chat.completions.create(
             model="gpt-4.1-mini",
             messages=messages,
-            stream=True
         )
 
         return {"response": second_response.choices[0].message.content}
