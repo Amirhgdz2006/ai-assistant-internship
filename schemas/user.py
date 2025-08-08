@@ -6,7 +6,7 @@ class UserCreate(BaseModel):
     email : EmailStr
     password : str
     role : Optional[str] = 'user'
-    auth_with_google : Optional[bool] = False
+
 
 class UserCreateGoogle(BaseModel):
     email : EmailStr

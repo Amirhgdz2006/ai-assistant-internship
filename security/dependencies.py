@@ -38,5 +38,5 @@ def require_admin(current_user: User = Depends(get_current_user)):
 
 def require_self_or_admin(user_id: int, current_user: User = Depends(get_current_user)):
     if current_user.role != "admin" and current_user.id != user_id:
-        raise HTTPException(status_code=403, detail="Not authorized")
+        raise HTTPException(status_code=403, detail="You don't have access")
     return current_user
