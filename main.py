@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from starlette.middleware.sessions import SessionMiddleware
+from fastapi.middleware.cors import CORSMiddleware
 
 import routers.user
 import routers.ai
@@ -17,6 +18,16 @@ from core.limiter import limiter
 secret_key = os.getenv("SECRET_KEY")
 
 app = FastAPI()
+
+origins = ["http://localhost:8000", "http://localhost:3000", "http://127.0.0.1:5173"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,  
+    allow_credentials=True, 
+    allow_methods=["*"],    
+    allow_headers=["*"]
+)
 
 app.add_middleware(SessionMiddleware, secret_key=secret_key)
 app.state.limiter = limiter
