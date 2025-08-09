@@ -10,6 +10,8 @@ jwt_secret_key = os.getenv("JWT_SECRET_KEY")
 algorithm = "HS256"
 access_token_expire_time = 10
 
+refresh_token_expire_time = 24 * 60
+
 # ---------- access token ----------
 
 def create_access_token(data:dict):
@@ -23,6 +25,19 @@ def create_access_token(data:dict):
         r_client.set(f"user_id:{user_id}", encoded_jwt, ex=access_token_expire_time * 60)
 
     return encoded_jwt
+
+def create_refresh_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + timedelta(minutes=refresh_token_expire_time)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, jwt_secret_key, algorithm=algorithm)
+
+    user_id = data.get("user_id")
+    if user_id:
+        r_client.set(f"refresh_token:{user_id}", encoded_jwt, ex=refresh_token_expire_time * 60)
+
+    return encoded_jwt
+
 
 
 def verify_access_token(token):
