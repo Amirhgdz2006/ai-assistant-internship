@@ -79,7 +79,7 @@ def log_out(request:Request):
 
 # ------------------ Refresh Token ------------------
 @router.post("/refresh_token")
-def refresh_token(request: Request):
+def refresh_token(request: Request, _: User = Depends(require_self_or_admin)):
     refresh_token = request.cookies.get("refresh_token")
     if not refresh_token:
         raise HTTPException(status_code=401, detail="No refresh token provided")
