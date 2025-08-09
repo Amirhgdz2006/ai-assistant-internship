@@ -84,7 +84,7 @@ def refresh_token(request: Request, _: User = Depends(require_self_or_admin)):
     if not refresh_token:
         raise HTTPException(status_code=401, detail="No refresh token provided")
 
-    payload = verify_access_token(refresh_token)  # چون ساختار JWT مشابه است از همین فانکشن استفاده کن
+    payload = verify_access_token(refresh_token)
 
     if payload is None or "user_id" not in payload:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
