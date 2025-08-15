@@ -10,7 +10,6 @@ from core.database import get_db
 from crud.user import find_user_by_email , create_user
 from security.jwt_handler import create_access_token
 import json
-import base64
 
 router = APIRouter(tags=["Google-Auth"])
 

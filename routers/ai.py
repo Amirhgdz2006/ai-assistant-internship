@@ -1,4 +1,4 @@
-from fastapi import APIRouter , HTTPException , Request , Depends
+from fastapi import APIRouter , HTTPException , status , Request , Depends
 import openai
 from pydantic import BaseModel
 from core.config import OPENAI_API_KEY, OPENAI_BASE_URL
@@ -7,7 +7,11 @@ import json
 from routers.google_auth import get_token_for_user
 from datetime import datetime
 from models.user import User
-from security.dependencies import require_self_or_admin
+from security.jwt_handler import verify_access_token
+from core.redis_client import r_client
+from crud.user import find_user_by_id
+from sqlalchemy.orm import Session
+from core.database import get_db
 
 router = APIRouter(tags=['AI'])
 
@@ -20,7 +24,23 @@ client = openai.OpenAI(
 )
 
 @router.post('/prompt')
-async def run_agent(request:Request , body: PromptRequest, _: User = Depends(require_self_or_admin)):
+async def run_agent(request:Request , body: PromptRequest, db:Session = Depends(get_db)):
+    session_id = request.cookies.get("session_id")
+    if not session_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No session id found in cookies or you are not logged in")
+    token = r_client.get(session_id)
+    if token is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No token found from session id")
+    
+    payload = verify_access_token(token)
+    if payload is None or "user_id" not in payload:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Token is expired or invalidated")
+
+    user = find_user_by_id(db, user_id=payload["user_id"])
+    
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST , detail="user not found")
+
     if not client.api_key:
         raise HTTPException(status_code=500, detail="API key is not configured.")
 

@@ -44,13 +44,7 @@ def create_user(db:Session , user_data:UserCreateGoogle):
 def read_existing_user(db:Session , user_id:int):
     user = db.query(User).filter(User.id == user_id).first()
     if user is not None:
-        return {
-            "id" : user.id,
-            "email" : user.email,
-            "password" : user.password,
-            "role" : user.role,
-            "is_active" : user.is_active
-        }
+        return user
 
 
 # ----------- update existing user -----------
@@ -62,13 +56,7 @@ def update_existing_user(db:Session , user_id:int , user_data:UserUpdate):
         user.is_active = user_data.is_active
         db.commit()
         db.refresh(user)
-        return {
-            "id" : user.id,
-            "email" : user.email,
-            "password" : user.password,
-            "role" : user.role,
-            "is_active" : user.is_active
-        }
+        return user
 
     
 # ----------- delete existing user -----------

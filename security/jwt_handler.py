@@ -2,7 +2,6 @@ from jose import jwt , JWTError
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 import os
-from core.redis_client import r_client
 
 load_dotenv()
 
@@ -20,25 +19,7 @@ def create_access_token(data:dict):
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, jwt_secret_key, algorithm=algorithm)
 
-    user_id = data.get("user_id")
-    if user_id:
-        r_client.set(f"user_id:{user_id}", encoded_jwt, ex=access_token_expire_time * 60)
-
     return encoded_jwt
-
-def create_refresh_token(data: dict):
-    to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(minutes=refresh_token_expire_time)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, jwt_secret_key, algorithm=algorithm)
-
-    user_id = data.get("user_id")
-    if user_id:
-        r_client.set(f"refresh_token:{user_id}", encoded_jwt, ex=refresh_token_expire_time * 60)
-
-    return encoded_jwt
-
-
 
 def verify_access_token(token):
     try:
