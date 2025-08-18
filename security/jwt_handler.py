@@ -7,9 +7,9 @@ load_dotenv()
 
 jwt_secret_key = os.getenv("JWT_SECRET_KEY")
 algorithm = "HS256"
-access_token_expire_time = 10
+access_token_expire_time = 30
 
-refresh_token_expire_time = 24 * 60
+# refresh_token_expire_time = 24 * 60
 
 # ---------- access token ----------
 

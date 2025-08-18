@@ -20,10 +20,10 @@ def get_current_user(request: Request, db: Session = Depends(get_db)):
     payload = verify_access_token(token)
 
     if payload is None or "user_id" not in payload:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Token is expired or invalidated")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Token is expired or invalidated")
 
     user = find_user_by_id(db, user_id=payload["user_id"])
     if user is not None:
         return user
     else:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="User not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="User not found")

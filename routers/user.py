@@ -12,7 +12,7 @@ import uuid
 
 router = APIRouter(prefix='/user' , tags=['User'])
 
-
+    
 # ------------------ Sign Up ------------------
 @router.post("/sign_up", response_model=UserOut)
 @limiter.limit("1/10 second")
@@ -20,7 +20,7 @@ def sign_up(user_data:UserCreate , request:Request , db:Session = Depends(get_db
     user = find_user_by_email(db , user_email = user_data.email)
 
     if user is not None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
     
     else:
         return create_user(db , user_data = user_data)
@@ -47,14 +47,6 @@ def log_in(user_data:UserRead , request:Request , db:Session = Depends(get_db)):
                 )
             
             r_client.set(session_id,access_token)
-            
-            # response.set_cookie(
-            #     key="refresh_token",
-            #     value=refresh_token,
-            #     httponly=True,
-            #     secure=False, # if you using HTTPS it should be True (secure=True)  
-            #     samesite="lax" 
-            # )
 
             return response
         else:
@@ -82,21 +74,21 @@ def log_out(response:Response , request:Request):
 def read_user(request:Request, db:Session = Depends(get_db)):
     session_id = request.cookies.get("session_id")
     if not session_id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No session id found in cookies or you are not logged in")
-    
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="you are not logged in")
+    print(session_id)
     token = r_client.get(session_id)
     if token is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No token found from session id")
     
     payload = verify_access_token(token)
     if payload is None or "user_id" not in payload:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Token is expired or invalidated")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token is expired or invalidated")
 
     user = find_user_by_id(db, user_id=payload["user_id"])
     if user is not None:
         return user
 
-    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST , detail="user not found")
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND , detail="user not found")
 
 
 # ------------------ Update User ------------------
@@ -105,7 +97,7 @@ def read_user(request:Request, db:Session = Depends(get_db)):
 def update_user(user_data:UserUpdate , request:Request , db:Session = Depends(get_db)):
     session_id = request.cookies.get("session_id")
     if not session_id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No session id found in cookies or you are not logged in")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="you are not logged in")
     
     token = r_client.get(session_id)
     if token is None:
@@ -113,14 +105,14 @@ def update_user(user_data:UserUpdate , request:Request , db:Session = Depends(ge
     
     payload = verify_access_token(token)
     if payload is None or "user_id" not in payload:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Token is expired or invalidated")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Token is expired or invalidated")
 
     user = find_user_by_id(db, user_id=payload["user_id"])
 
     if user is not None:
         return update_existing_user(db , user_id=user.id , user_data=user_data)
         
-    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST , detail="user not found")
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND , detail="user not found")
 
 
 # ------------------ Delete User ------------------
@@ -129,7 +121,7 @@ def update_user(user_data:UserUpdate , request:Request , db:Session = Depends(ge
 def delete_user(request:Request , db:Session = Depends(get_db)):
     session_id = request.cookies.get("session_id")
     if not session_id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No session id found in cookies or you are not logged in")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="you are not logged in")
     
     token = r_client.get(session_id)
     if token is None:
@@ -137,7 +129,7 @@ def delete_user(request:Request , db:Session = Depends(get_db)):
     
     payload = verify_access_token(token)
     if payload is None or "user_id" not in payload:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Token is expired or invalidated")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Token is expired or invalidated")
 
     user = find_user_by_id(db, user_id=payload["user_id"])
 
@@ -145,6 +137,6 @@ def delete_user(request:Request , db:Session = Depends(get_db)):
         if user.role == "admin":
             return delete_existing_user(db , user_id=user.id)
         else:
-            return HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Admin access required")
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,detail="Admin access required")
     
-    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST , detail="user not found")
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND , detail="user not found")

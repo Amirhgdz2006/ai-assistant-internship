@@ -27,22 +27,22 @@ client = openai.OpenAI(
 async def run_agent(request:Request , body: PromptRequest, db:Session = Depends(get_db)):
     session_id = request.cookies.get("session_id")
     if not session_id:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No session id found in cookies or you are not logged in")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="you are not logged in")
     token = r_client.get(session_id)
     if token is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No token found from session id")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No token found from this session id")
     
     payload = verify_access_token(token)
     if payload is None or "user_id" not in payload:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Token is expired or invalidated")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="Token is expired or invalidated")
 
     user = find_user_by_id(db, user_id=payload["user_id"])
     
     if user is None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST , detail="user not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND , detail="user not found")
 
     if not client.api_key:
-        raise HTTPException(status_code=500, detail="API key is not configured.")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="API key is not configured.")
 
     credentials = await get_token_for_user(request)
 
@@ -115,7 +115,7 @@ async def run_agent(request:Request , body: PromptRequest, db:Session = Depends(
         if not tool_calls:
             return {"response": response_message.content}
 
-
+         
   
         messages.append(response_message)
         
@@ -123,7 +123,9 @@ async def run_agent(request:Request , body: PromptRequest, db:Session = Depends(
             "list_calendar_events": calendar.list_calendar_events,
             "create_calendar_event": calendar.create_calendar_event,
         }
-
+        
+        if credentials is None:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Please sign in with your Google account to enable calendar access")
 
         for tool_call in tool_calls:
             function_name = tool_call.function.name
