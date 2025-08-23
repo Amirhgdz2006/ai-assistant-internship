@@ -119,14 +119,15 @@ async def run_agent(request:Request , body: PromptRequest, db:Session = Depends(
   
         messages.append(response_message)
         
+        if credentials is None:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Please sign in with your Google account to enable calendar access")
+
+        
         available_functions = {
             "list_calendar_events": calendar.list_calendar_events,
             "create_calendar_event": calendar.create_calendar_event,
         }
         
-        if credentials is None:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Please sign in with your Google account to enable calendar access")
-
         for tool_call in tool_calls:
             function_name = tool_call.function.name
             function_to_call = available_functions[function_name]

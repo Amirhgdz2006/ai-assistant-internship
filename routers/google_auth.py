@@ -1,4 +1,4 @@
-from fastapi import APIRouter , Request , status , Cookie , Depends
+from fastapi import APIRouter , Request , status  , Depends
 from fastapi.responses import RedirectResponse, JSONResponse
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build

@@ -51,8 +51,11 @@ def read_existing_user(db:Session , user_id:int):
 def update_existing_user(db:Session , user_id:int , user_data:UserUpdate):
     user = db.query(User).filter(User.id == user_id).first()
     if user is not None:
-        user.email = user_data.email
-        user.password = hash_password(user_data.password)
+        if user_data.email != "user@example.com":
+            user.email = user_data.email
+
+        if user_data.password != "string":
+            user.password = hash_password(user_data.password)
         user.is_active = user_data.is_active
         db.commit()
         db.refresh(user)

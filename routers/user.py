@@ -5,7 +5,7 @@ from crud.user import verify_password , create_user , read_existing_user , updat
 from sqlalchemy.orm import Session
 from core.database import get_db
 from models.user import User
-from security.jwt_handler import create_access_token,  verify_access_token
+from security.jwt_handler import create_access_token, create_refresh_token,  verify_access_token
 from core.limiter import limiter
 from core.redis_client import r_client
 import uuid
@@ -34,10 +34,11 @@ def log_in(user_data:UserRead , request:Request , db:Session = Depends(get_db)):
     if user is not None:
         if verify_password(user_data.password , user.password):
             access_token = create_access_token({"user_id":user.id})
-            # refresh_token = create_refresh_token({"user_id":user.id})
+            refresh_token = create_refresh_token({"user_id":user.id})
 
             response = JSONResponse(content={"message": "Login successful"})
             session_id = str(uuid.uuid4())
+            refresh_token_id = str(uuid.uuid4())
             response.set_cookie(
                 key="session_id",
                 value=session_id,
@@ -45,8 +46,16 @@ def log_in(user_data:UserRead , request:Request , db:Session = Depends(get_db)):
                 secure=False, # if you using HTTPS it should be True (secure=True)  
                 samesite="lax" 
                 )
+            response.set_cookie(
+                key="refresh_token_id",
+                value=refresh_token_id,
+                httponly=True,  
+                secure=False, # if you using HTTPS it should be True (secure=True)  
+                samesite="lax" 
+                )
             
             r_client.set(session_id,access_token)
+            r_client.set(refresh_token_id,refresh_token)
 
             return response
         else:
@@ -59,23 +68,46 @@ def log_in(user_data:UserRead , request:Request , db:Session = Depends(get_db)):
 @router.post("/log_out")
 def log_out(response:Response , request:Request):
     session_id = request.cookies.get("session_id")
+    refresh_token_id = request.cookies.get("refresh_token_id")
+    
 
-    if session_id is not None:
+    if session_id and refresh_token_id is not None:
         response.delete_cookie("session_id")
+        response.delete_cookie("refresh_token_id")
 
         return JSONResponse(content={"message": "Logged out successfully"})
     else:
         return JSONResponse(content={"message": "No user is currently logged in"})
     
     
+@router.post("/refresh_token")
+def refresh_token(request:Request , db:Session = Depends(get_db)):
+    refresh_token_id = request.cookies.get("refresh_token_id")
+    session_id = request.cookies.get("session_id")
+
+    if not refresh_token_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="you are not logged in")
+    token = r_client.get(refresh_token_id)
+    if token is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No token found from session id")
+    payload = verify_access_token(token)
+    if payload is None or "user_id" not in payload:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token is expired or invalidated")
+
+    user = find_user_by_id(db, user_id=payload["user_id"])
+    access_token = create_access_token({"user_id":user.id})
+    r_client.set(session_id,access_token)
+
+    return JSONResponse(content={"message": "Token refreshed successfully"})
+
+
 # ------------------ Read User ------------------
-@router.get("/read_userd", response_model=UserOut)
+@router.get("/read_user", response_model=UserOut)
 @limiter.limit("1/10 second")
 def read_user(request:Request, db:Session = Depends(get_db)):
     session_id = request.cookies.get("session_id")
     if not session_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="you are not logged in")
-    print(session_id)
     token = r_client.get(session_id)
     if token is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No token found from session id")
