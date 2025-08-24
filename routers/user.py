@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Request, status,Response, Depends
+from fastapi import APIRouter, HTTPException, Request, status, Depends
 from fastapi.responses import JSONResponse
 from schemas.user import UserCreate , UserRead, UserUpdate, UserOut
 from crud.user import verify_password , create_user , read_existing_user , update_existing_user , delete_existing_user , find_user_by_email ,find_user_by_id
@@ -66,16 +66,22 @@ def log_in(user_data:UserRead , request:Request , db:Session = Depends(get_db)):
 
 # ------------------ Log Out ------------------
 @router.post("/log_out")
-def log_out(response:Response , request:Request):
+def log_out(request:Request):
     session_id = request.cookies.get("session_id")
     refresh_token_id = request.cookies.get("refresh_token_id")
+    credentials = request.cookies.get("credentials")
+
+    response = JSONResponse(content={"message": "Logged out successfully"})
     
-
-    if session_id and refresh_token_id is not None:
+    if session_id:
         response.delete_cookie("session_id")
+    if refresh_token_id:
         response.delete_cookie("refresh_token_id")
+    if credentials:
+        response.delete_cookie("credentials")
 
-        return JSONResponse(content={"message": "Logged out successfully"})
+
+        return response
     else:
         return JSONResponse(content={"message": "No user is currently logged in"})
     

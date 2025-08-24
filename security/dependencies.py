@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session
 from core.database import get_db
 from security.jwt_handler import verify_access_token
 from crud.user import find_user_by_id
-from models.user import User
 from core.redis_client import r_client
 
 

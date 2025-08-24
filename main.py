@@ -2,7 +2,7 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request , HTTPException , status
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -35,10 +35,7 @@ app.add_middleware(SlowAPIMiddleware)
 
 @app.exception_handler(RateLimitExceeded)
 async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
-    return JSONResponse(
-        status_code=429,
-        content={"message": "Too many requests. Please wait a few seconds and try again."}
-    )
+    raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS,detail="Too many requests. Please wait a few seconds and try again.")
 
 app.include_router(routers.user.router)
 app.include_router(routers.ai.router)

@@ -4,12 +4,15 @@ from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from google.oauth2.credentials import Credentials
 from core.config import CLIENT_CONFIG
+from core.redis_client import r_client
 from schemas.user import UserCreateGoogle
 from sqlalchemy.orm import Session
 from core.database import get_db
 from crud.user import find_user_by_email , create_user
-from security.jwt_handler import create_access_token
+from security.jwt_handler import create_access_token , create_refresh_token
 import json
+import uuid
+
 
 router = APIRouter(tags=["Google-Auth"])
 
@@ -56,15 +59,29 @@ async def callback(request: Request, code: str, db: Session = Depends(get_db)):
             user = create_user(db, user_data=user_info)
 
         access_token = create_access_token({"user_id": user.id})
+        refresh_token = create_refresh_token({"user_id":user.id})
+
+        session_id = str(uuid.uuid4())
+        refresh_token_id = str(uuid.uuid4())
+
         response = RedirectResponse(url="http://localhost:8000/docs", status_code=status.HTTP_302_FOUND)
         response.set_cookie(
-            key="access_token",
-            value=access_token,
+            key="session_id",
+            value=session_id,
             httponly=True,
             samesite="lax",
             secure=False # if you using HTTPS it should be True (secure=True)
         )
-
+        response.set_cookie(
+                key="refresh_token_id",
+                value=refresh_token_id,
+                httponly=True,  
+                secure=False, # if you using HTTPS it should be True (secure=True)  
+                samesite="lax" 
+                )
+        r_client.set(session_id,access_token)
+        r_client.set(refresh_token_id,refresh_token)
+        
         response.set_cookie(
             key="credentials",
             value=json.dumps({

@@ -44,7 +44,7 @@ async def run_agent(request:Request , body: PromptRequest, db:Session = Depends(
     if not client.api_key:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="API key is not configured.")
 
-    credentials = await get_token_for_user(request)
+    credentials = await get_token_for_user(request)  
 
     tools = [
         {
@@ -100,6 +100,7 @@ async def run_agent(request:Request , body: PromptRequest, db:Session = Depends(
 
     messages = [{"role": "user", "content": f"today date:{datetime.today().strftime("%Y-%m-%d")}"},{"role": "user", "content": body.prompt}]
 
+
     try:
 
         first_response = openai.chat.completions.create(
@@ -116,12 +117,15 @@ async def run_agent(request:Request , body: PromptRequest, db:Session = Depends(
             return {"response": response_message.content}
 
          
+        if credentials is None:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Please sign in with your Google account to enable calendar access")
+          
   
         messages.append(response_message)
         
         if credentials is None:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Please sign in with your Google account to enable calendar access")
-
+            
         
         available_functions = {
             "list_calendar_events": calendar.list_calendar_events,
@@ -153,6 +157,8 @@ async def run_agent(request:Request , body: PromptRequest, db:Session = Depends(
 
         return {"response": second_response.choices[0].message.content}
 
-            
+    except HTTPException as http_exc:
+        raise http_exc
+                
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
